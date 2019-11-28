@@ -4,13 +4,10 @@
 #ifndef SKIRT_BRIM_H
 #define SKIRT_BRIM_H
 
-#include "utils/Coord_t.h"
+#include "sliceDataStorage.h"
 
 namespace cura 
 {
-
-class Polygons;
-class SliceDataStorage;
 
 class SkirtBrim
 {
@@ -25,10 +22,10 @@ public:
      * \param distance The distance of the first outset from the parts at the first
      * layer.
      * \param primary_line_count Number of offsets / brim lines of the primary extruder.
-     * \param set to false to force not doing brim generation for helper-structures (support and ooze/draft shields)
      */
-    static void generate(SliceDataStorage& storage, Polygons first_layer_outline, int distance, unsigned int primary_line_count, bool allow_helpers = true);
+    static void generate(SliceDataStorage& storage, int distance, unsigned int primary_line_count);
 
+private:
     /*!
      * \brief Get the reference outline of the first layer around which to
      * generate the first brim/skirt line.
@@ -45,7 +42,6 @@ public:
      */
     static void getFirstLayerOutline(SliceDataStorage& storage, const size_t primary_line_count, const bool is_skirt, Polygons& first_layer_outline);
 
-private:
     static void generateSupportBrim(SliceDataStorage& storage);
 
     /*!

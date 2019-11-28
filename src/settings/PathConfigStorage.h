@@ -7,15 +7,15 @@
 #include <vector>
 
 #include "../GCodePathConfig.h"
-#include "../utils/Coord_t.h"
+#include "../settings/types/LayerIndex.h"
+#include "../utils/IntPoint.h" // coord_t
 
 namespace cura
 {
 
-class ExtruderTrain;
-struct LayerIndex;
-class SliceDataStorage;
-class SliceMeshStorage;
+class SliceDataStorage; // forward decl for SliceDataStorage
+class SliceMeshStorage; // forward decl for SliceDataStorage
+class ExtruderTrain; // forward decl for SliceDataStorage
 
 /*!
  * A class to represent all configurations for all features types of printed lines in a meshgroup.

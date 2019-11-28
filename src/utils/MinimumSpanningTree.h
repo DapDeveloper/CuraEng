@@ -28,6 +28,13 @@ class MinimumSpanningTree
      */
     struct Edge {
         /**
+         * Constructs a new edge.
+         * @param start One endpoint of the edge.
+         * @param end The other endpoint of the edge.
+         */
+        Edge(const Point start, const Point end);
+
+        /**
          * The point at which this edge starts.
          */
         const Point start;
@@ -36,9 +43,14 @@ class MinimumSpanningTree
          * The point at which this edge ends.
          */
         const Point end;
+
+        /**
+         * Computes the length of this edge.
+         * @return The length of this edge.
+         */
+        int length() const;
     };
 public:
-    MinimumSpanningTree() = default;
     /*!
      * \brief Constructs a minimum spanning tree that spans all given vertices.
      */
@@ -48,7 +60,7 @@ public:
      * \brief Gets the nodes that are adjacent to the specified node.
      * \return A list of nodes that are adjacent.
      */
-    std::vector<Point> adjacentNodes(Point node) const;
+    const std::vector<Point> adjacentNodes(Point node) const;
 
     /*!
      * \brief Gets the leaves of the tree.
@@ -63,8 +75,7 @@ public:
     std::vector<Point> vertices() const;
 
 private:
-    using AdjacencyGraph_t = std::unordered_map<Point, std::vector<Edge>>;
-    AdjacencyGraph_t adjacency_graph;
+    const std::unordered_map<Point, std::vector<Edge>> adjacency_graph;
 
     /*!
      * \brief Computes the edges of a minimum spanning tree using Prim's
@@ -73,7 +84,7 @@ private:
      * \param vertices The vertices to span.
      * \return An adjacency graph with for each point one or more edges.
      */
-    AdjacencyGraph_t prim(std::unordered_set<Point> vertices) const;
+    const std::unordered_map<Point, std::vector<Edge>> prim(std::unordered_set<Point> vertices) const;
 };
 
 }

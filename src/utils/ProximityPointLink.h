@@ -4,15 +4,20 @@
 #ifndef PROXIMITY_POINT_LINK_H
 #define PROXIMITY_POINT_LINK_H
 
-#include <functional> // hash function object
-#include <list>
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <list>
 #include <utility> // pair
-#include <vector>
+
+#include <functional> // hash function object
+
+#include "IntPoint.h"
+#include "polygon.h"
+#include "linearAlg2D.h"
+#include "optional.h"
 
 #include "ListPolyIt.h"
-
 
 namespace cura 
 {

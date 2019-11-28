@@ -5,14 +5,13 @@
 #define INFILL_SPAGHETTI_INFILL_H
 
 #include <list>
-#include "../settings/types/LayerIndex.h"
+
+#include "../settings/types/AngleRadians.h" //To compute the inset distance.
+#include "../utils/IntPoint.h"
 #include "../utils/polygon.h"
+#include "../sliceDataStorage.h"
 
-namespace cura
-{
-
-class SliceLayerPart;
-class SliceMeshStorage;
+namespace cura {
 
 /*!
  * Spaghetti infill is a type of infill which fills every so many layers, but extrudes as much filament corresponding to the total unfilled volume under the filling area.

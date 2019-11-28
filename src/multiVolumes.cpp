@@ -3,9 +3,6 @@
 
 #include "Application.h"
 #include "multiVolumes.h"
-#include "Slice.h"
-#include "slicer.h"
-#include "settings/EnumSettings.h"
 
 namespace cura 
 {

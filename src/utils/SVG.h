@@ -6,14 +6,14 @@
 
 #include <stdio.h> // for file output
 
-#include "AABB.h"
+#include "polygon.h"
 #include "IntPoint.h"
+#include "floatpoint.h"
+#include "AABB.h"
+#include "logoutput.h"
 #include "NoCopy.h"
 
-namespace cura
-{
-
-class FPoint3;
+namespace cura {
 
 class SVG : NoCopy
 {
