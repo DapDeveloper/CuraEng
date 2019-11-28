@@ -2,11 +2,16 @@
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include "Application.h" //To get settings.
+#include "ExtruderTrain.h"
 #include "FffProcessor.h" //To create a mesh group with if none is provided.
+#include "raft.h"
+#include "Slice.h"
 #include "sliceDataStorage.h"
+#include "infill/SierpinskiFillProvider.h"
 #include "infill/SubDivCube.h" // For the destructor
 #include "infill/DensityProvider.h" // for destructor
 #include "utils/math.h" //For PI.
+#include "utils/logoutput.h"
 
 
 namespace cura
@@ -177,6 +182,11 @@ SliceMeshStorage::~SliceMeshStorage()
 
 bool SliceMeshStorage::getExtruderIsUsed(const size_t extruder_nr) const
 {
+    if (settings.get<bool>("anti_overhang_mesh")
+        || settings.get<bool>("support_mesh"))
+    { // object is not printed as object, but as support.
+        return false;
+    }
     if (settings.get<bool>("magic_spiralize"))
     {
         if (settings.get<ExtruderTrain&>("wall_0_extruder_nr").extruder_nr == extruder_nr)
@@ -344,8 +354,16 @@ std::vector<RetractionConfig> SliceDataStorage::initializeRetractionConfigs()
     return ret;
 }
 
+std::vector<WipeScriptConfig> SliceDataStorage::initializeWipeConfigs()
+{
+    std::vector<WipeScriptConfig> ret;
+    ret.resize(Application::getInstance().current_slice->scene.extruders.size());
+    return ret;
+}
+
 SliceDataStorage::SliceDataStorage()
 : print_layer_count(0)
+, wipe_config_per_extruder(initializeWipeConfigs())
 , retraction_config_per_extruder(initializeRetractionConfigs())
 , extruder_switch_retraction_config_per_extruder(initializeRetractionConfigs())
 , max_print_height_second_to_last_extruder(-1)
@@ -392,6 +410,7 @@ Polygons SliceDataStorage::getLayerOutlines(const LayerIndex layer_nr, const boo
     {
         Polygons total;
         coord_t maximum_resolution = std::numeric_limits<coord_t>::max();
+        coord_t maximum_deviation = std::numeric_limits<coord_t>::max();
         if (layer_nr >= 0)
         {
             for (const SliceMeshStorage& mesh : meshes)
@@ -407,6 +426,7 @@ Polygons SliceDataStorage::getLayerOutlines(const LayerIndex layer_nr, const boo
                     total = total.unionPolygons(layer.openPolyLines.offsetPolyLine(100));
                 }
                 maximum_resolution = std::min(maximum_resolution, mesh.settings.get<coord_t>("meshfix_maximum_resolution"));
+                maximum_deviation = std::min(maximum_deviation, mesh.settings.get<coord_t>("meshfix_maximum_deviation"));
             }
         }
         if (include_support)
@@ -426,10 +446,10 @@ Polygons SliceDataStorage::getLayerOutlines(const LayerIndex layer_nr, const boo
         {
             if (primeTower.enabled)
             {
-                total.add(primeTower.outer_poly);
+                total.add(layer_nr == 0 ? primeTower.outer_poly_first_layer : primeTower.outer_poly);
             }
         }
-        total.simplify(maximum_resolution, maximum_resolution);
+        total.simplify(maximum_resolution, maximum_deviation);
         return total;
     }
 }
