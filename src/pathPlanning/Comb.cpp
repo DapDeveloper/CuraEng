@@ -1,4 +1,4 @@
-//Copyright (c) 2019 Ultimaker B.V.
+//Copyright (c) 2018 Ultimaker B.V.
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include "Comb.h"
@@ -7,11 +7,8 @@
 #include <functional> // function
 #include <unordered_set>
 
-#include "CombPaths.h"
-#include "LinePolygonsCrossings.h"
 #include "../Application.h"
-#include "../ExtruderTrain.h"
-#include "../Slice.h"
+#include "../utils/polygonUtils.h"
 #include "../utils/linearAlg2D.h"
 #include "../utils/PolygonsPointIndex.h"
 #include "../sliceDataStorage.h"

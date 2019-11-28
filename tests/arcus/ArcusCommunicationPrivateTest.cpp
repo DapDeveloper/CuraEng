@@ -1,83 +1,68 @@
-//Copyright (c) 2019 Ultimaker B.V.
+//Copyright (c) 2018 Ultimaker B.V.
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
-#include <array>
-#include <gtest/gtest.h>
-#include <fstream>
-
+#include "ArcusCommunicationPrivateTest.h"
 #include "MockSocket.h"
-#include "../../src/Application.h"
-#include "../../src/ExtruderTrain.h"
-#include "../../src/Slice.h"
-#include "../../src/communication/ArcusCommunicationPrivate.h" //The class we're testing.
+
+#include "../src/Application.h"
+#include "../src/Slice.h"
 
 namespace cura
 {
 
+CPPUNIT_TEST_SUITE_REGISTRATION(ArcusCommunicationPrivateTest);
+
 constexpr size_t gkTestNumMeshGroups = 1;
 
-/*
- * Fixture with an instance of Private that sets up the mock socket
- * correctly.
- */
-class ArcusCommunicationPrivateTest : public testing::Test
+void ArcusCommunicationPrivateTest::setUp()
 {
-public:
-    ArcusCommunication::Private* instance;
+    instance = new ArcusCommunication::Private();
+    instance->socket = new MockSocket();
+    Application::getInstance().current_slice = new Slice(gkTestNumMeshGroups);
+}
 
-    void SetUp()
+void ArcusCommunicationPrivateTest::tearDown()
+{
+    delete instance->socket;
+    delete instance;
+
+    delete Application::getInstance().current_slice;
+}
+
+// Settings need to be loaded into different protobuf-objects during different tests.
+template<typename T>
+void loadTestSettings(const std::string& filename, T* p_settings, std::unordered_map<std::string, std::string>* p_raw_settings)
+{
+    T& settings = *p_settings;
+    std::unordered_map<std::string, std::string>& raw_settings = *p_raw_settings;
+
+    std::ifstream test_settings_file(filename);
+    CPPUNIT_ASSERT(test_settings_file.is_open());
+
+    std::string line;
+    while (std::getline(test_settings_file, line))
     {
-        instance = new ArcusCommunication::Private();
-        instance->socket = new MockSocket();
-        Application::getInstance().current_slice = new Slice(gkTestNumMeshGroups);
-    }
-
-    void TearDown()
-    {
-        delete instance->socket;
-        delete instance;
-
-        delete Application::getInstance().current_slice;
-    }
-
-    /*
-     * Settings need to be loaded into different Protobuf-objects during
-     * different tests.
-     */
-    template<typename T>
-    void loadTestSettings(const std::string& filename, T* p_settings, std::unordered_map<std::string, std::string>* p_raw_settings)
-    {
-        T& settings = *p_settings;
-        std::unordered_map<std::string, std::string>& raw_settings = *p_raw_settings;
-
-        std::ifstream test_settings_file(filename);
-        ASSERT_TRUE(test_settings_file.is_open());
-
-        std::string line;
-        while (std::getline(test_settings_file, line))
+        size_t pos = line.find_first_of('=');
+        if (line.size() < 3 || pos == std::string::npos) // <<- Whitespace, etc.
         {
-            size_t pos = line.find_first_of('=');
-            if (line.size() < 3 || pos == std::string::npos) // <<- Whitespace, etc.
-            {
-                continue;
-            }
-
-            const std::string key = line.substr(0, pos);
-            const std::string value = line.substr(pos + 1, std::string::npos);
-
-            raw_settings.insert({key, value});
-
-            cura::proto::Setting* entry = settings.add_settings();
-            entry->set_name(key);
-            entry->set_value(value);
+            continue;
         }
-        test_settings_file.close();
-        EXPECT_FALSE(raw_settings.empty());
-        EXPECT_EQ(static_cast<size_t>(settings.settings_size()), raw_settings.size());
-    }
-};
+        
+        const std::string key = line.substr(0, pos);
+        const std::string value = line.substr(pos + 1, std::string::npos);
 
-TEST_F(ArcusCommunicationPrivateTest, ReadGlobalSettingsMessage)
+        raw_settings.insert({key, value});
+
+        cura::proto::Setting* entry = settings.add_settings();
+        entry->set_name(key);
+        entry->set_value(value);
+    }
+    test_settings_file.close();
+    CPPUNIT_ASSERT(!raw_settings.empty());
+    CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(settings.settings_size()), raw_settings.size());
+}
+
+void ArcusCommunicationPrivateTest::readGlobalSettingsMessageTest()
 {
     // Read 'real-life' global settings from file:
 
@@ -87,16 +72,16 @@ TEST_F(ArcusCommunicationPrivateTest, ReadGlobalSettingsMessage)
 
     // The call it's actually all about:
     instance->readGlobalSettingsMessage(global_settings);
-
+    
     // Check if they are equal in general:
     const auto& settings = Application::getInstance().current_slice->scene.settings;
     for (const auto& entry : raw_settings)
     {
-        EXPECT_EQ(settings.get<std::string>(entry.first), entry.second);
+        CPPUNIT_ASSERT_EQUAL(settings.get<std::string>(entry.first), entry.second);
     }
 }
 
-TEST_F(ArcusCommunicationPrivateTest, ReadSingleExtruderSettingsMessage)
+void ArcusCommunicationPrivateTest::readSingleExtruderSettingsMessageTest()
 {
     google::protobuf::RepeatedPtrField<proto::Extruder> messages; //Construct a message.
 
@@ -115,11 +100,12 @@ TEST_F(ArcusCommunicationPrivateTest, ReadSingleExtruderSettingsMessage)
     //Run the call that we're testing.
     instance->readExtruderSettingsMessage(messages);
 
-    ASSERT_EQ(size_t(1), Application::getInstance().current_slice->scene.extruders.size()) << "Reading the extruders must construct the correct amount of extruders in the scene.";
-    EXPECT_EQ(setting_value, Application::getInstance().current_slice->scene.extruders[0].settings.get<std::string>("test_setting"));
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("Reading the extruders must construct the correct amount of extruders in the scene.",
+                                 size_t(1), Application::getInstance().current_slice->scene.extruders.size());
+    CPPUNIT_ASSERT_EQUAL(setting_value, Application::getInstance().current_slice->scene.extruders[0].settings.get<std::string>("test_setting"));
 }
 
-TEST_F(ArcusCommunicationPrivateTest, ReadMultiExtruderSettingsMessage)
+void ArcusCommunicationPrivateTest::readMultiExtruderSettingsMessageTest()
 {
     google::protobuf::RepeatedPtrField<proto::Extruder> messages; //Construct a message.
 
@@ -143,12 +129,13 @@ TEST_F(ArcusCommunicationPrivateTest, ReadMultiExtruderSettingsMessage)
     //Run the call that we're testing.
     instance->readExtruderSettingsMessage(messages);
 
-    ASSERT_EQ(size_t(2), Application::getInstance().current_slice->scene.extruders.size()) << "Reading the extruders must construct the correct amount of extruders in the scene.";
-    EXPECT_EQ(std::string("First"), Application::getInstance().current_slice->scene.extruders[0].settings.get<std::string>("What extruder are you?"));
-    EXPECT_EQ(std::string("Second"), Application::getInstance().current_slice->scene.extruders[1].settings.get<std::string>("What extruder are you?"));
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("Reading the extruders must construct the correct amount of extruders in the scene.",
+                                 size_t(2), Application::getInstance().current_slice->scene.extruders.size());
+    CPPUNIT_ASSERT_EQUAL(std::string("First"), Application::getInstance().current_slice->scene.extruders[0].settings.get<std::string>("What extruder are you?"));
+    CPPUNIT_ASSERT_EQUAL(std::string("Second"), Application::getInstance().current_slice->scene.extruders[1].settings.get<std::string>("What extruder are you?"));
 }
 
-TEST_F(ArcusCommunicationPrivateTest, ReadMeshGroupMessage)
+void ArcusCommunicationPrivateTest::readMeshGroupMessageTest()
 {
     // Setup:
     cura::proto::ObjectList mesh_message;
@@ -162,7 +149,7 @@ TEST_F(ArcusCommunicationPrivateTest, ReadMeshGroupMessage)
 
     // - - Read cube vertices from a test-file, then add to message:
     std::ifstream cube_verts_file("../tests/cube_vertices.txt");
-    ASSERT_TRUE(cube_verts_file.is_open());
+    CPPUNIT_ASSERT(cube_verts_file.is_open());
 
     std::vector<float> raw_vertices;
 
@@ -172,8 +159,7 @@ TEST_F(ArcusCommunicationPrivateTest, ReadMeshGroupMessage)
         raw_vertices.push_back(next);
     }
     cube_verts_file.close();
-    ASSERT_EQ(raw_vertices.size() % 3, 0);
-    ASSERT_FALSE(raw_vertices.empty());
+    CPPUNIT_ASSERT(raw_vertices.size() % 3 == 0 && ! raw_vertices.empty());
 
     // (NOTE: *Don't* replace the below by strncopy, direct call to constructor, etc. in any way. We need to pass '/0' inside the string. Blame protobuf!)
     const size_t num_str = sizeof(float) * raw_vertices.size();
@@ -209,15 +195,15 @@ TEST_F(ArcusCommunicationPrivateTest, ReadMeshGroupMessage)
 
     // Checks:
     auto& scene = Application::getInstance().current_slice->scene;
-    ASSERT_FALSE(scene.mesh_groups.empty());
+    CPPUNIT_ASSERT(!scene.mesh_groups.empty());
 
     auto& meshes = scene.mesh_groups[0].meshes;
-    ASSERT_FALSE(meshes.empty());
+    CPPUNIT_ASSERT(!meshes.empty());
 
     auto& vertices = meshes[0].vertices;
-    ASSERT_FALSE(vertices.empty());
-    ASSERT_EQ(vertices.size(), size_t(8)); //A cube should have 8 unique vertices.
-    ASSERT_EQ(meshes[0].faces.size(), size_t(12)); // A cube should have 12 tri-s (2 for each 6 sides of the dice).
+    CPPUNIT_ASSERT(!vertices.empty());
+    CPPUNIT_ASSERT_EQUAL(vertices.size(), size_t(8)); //A cube should have 8 unique vertices.
+    CPPUNIT_ASSERT_EQUAL(meshes[0].faces.size(), size_t(12)); // A cube should have 12 tri-s (2 for each 6 sides of the dice).
 
     // Distances should be the same:
 
@@ -247,7 +233,7 @@ TEST_F(ArcusCommunicationPrivateTest, ReadMeshGroupMessage)
     // - Then, just compare:
     for (int i = 0; i < 3; ++i)
     {
-        EXPECT_EQ(max_coords[i] - min_coords[i], raw_max_coords[i] - raw_min_coords[i]);
+        CPPUNIT_ASSERT_EQUAL(max_coords[i] - min_coords[i], raw_max_coords[i] - raw_min_coords[i]);
     }
 }
 

@@ -2,7 +2,6 @@
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include "mesh.h"
-#include "utils/floatpoint.h"
 #include "utils/logoutput.h"
 
 namespace cura

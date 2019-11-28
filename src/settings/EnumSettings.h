@@ -4,6 +4,8 @@
 #ifndef SETTINGSBASEVIRTUAL_H
 #define SETTINGSBASEVIRTUAL_H
 
+#include "../utils/floatpoint.h" //For FMatrix3x3.
+
 namespace cura
 {
 

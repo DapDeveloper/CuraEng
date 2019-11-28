@@ -7,6 +7,14 @@
 #include <forward_list>
 #include <unordered_set>
 
+#include <memory>
+#include <vector>
+#include <utility>
+#include <unordered_map>
+
+#include "sliceDataStorage.h"
+#include "settings/types/LayerIndex.h"
+
 
 namespace cura
 {
@@ -168,9 +176,6 @@ private:
     mutable std::unordered_map<RadiusLayerPair, Polygons> avoidance_cache_;
     mutable std::unordered_map<RadiusLayerPair, Polygons> internal_model_cache_;
 };
-
-class SliceDataStorage;
-class SliceMeshStorage;
 
 /*!
  * \brief Generates a tree structure to support your models.

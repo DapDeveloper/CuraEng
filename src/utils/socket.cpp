@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
+#ifdef __WIN32
 #include <winsock2.h>
 #else
 #include <sys/types.h>
@@ -17,7 +17,7 @@
 namespace cura
 {
     
-#ifdef _WIN32
+#ifdef __WIN32
 bool wsaStartupDone = false;
 #endif
 
@@ -25,7 +25,7 @@ ClientSocket::ClientSocket()
 {
     sockfd = -1;
 
-#ifdef _WIN32
+#ifdef __WIN32
     if (!wsaStartupDone)
     {
         WSADATA wsaData;
@@ -131,7 +131,7 @@ void ClientSocket::close()
 {
     if (sockfd == -1)
         return;
-#ifdef _WIN32
+#ifdef __WIN32
     closesocket(sockfd);
 #else
     ::close(sockfd);

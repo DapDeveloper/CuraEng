@@ -4,16 +4,10 @@
 #ifndef SKIN_H
 #define SKIN_H
 
-#include "settings/types/LayerIndex.h"
-#include "utils/Coord_t.h"
+#include "sliceDataStorage.h"
 
 namespace cura 
 {
-
-class Polygons;
-class SkinPart;
-class SliceLayerPart;
-class SliceMeshStorage;
 
 /*!
  * Class containing all skin and infill area computation functions

@@ -2,10 +2,7 @@
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include "Application.h" //To get settings.
-#include "ExtruderTrain.h"
-#include "LayerPlan.h"
 #include "MergeInfillLines.h"
-#include "Slice.h"
 #include "PrintFeature.h"
 #include "utils/linearAlg2D.h"
 
@@ -14,7 +11,7 @@ namespace cura
 MergeInfillLines::MergeInfillLines(ExtruderPlan& plan)
 : extruder_plan(plan)
 , nozzle_size(Application::getInstance().current_slice->scene.extruders[extruder_plan.extruder_nr].settings.get<coord_t>("machine_nozzle_size"))
-, maximum_deviation(Application::getInstance().current_slice->scene.extruders[extruder_plan.extruder_nr].settings.get<coord_t>("meshfix_maximum_deviation"))
+, maximum_resolution(Application::getInstance().current_slice->scene.extruders[extruder_plan.extruder_nr].settings.get<coord_t>("meshfix_maximum_resolution"))
     {
         //Just copy the parameters to their fields.
     }
@@ -104,8 +101,8 @@ MergeInfillLines::MergeInfillLines(ExtruderPlan& plan)
                 merged_part_length = vSize(first_path.points[first_path.points.size() - 2] - average_second_path);
                 new_error_area = sqrt(dist2_from_line) * merged_part_length / 2;
             }
-            // The max error margin uses the meshfix_maximum_deviation setting.
-            if (first_path.points.size() > 1 && error_area + new_error_area < merged_part_length * maximum_deviation)
+            // The max error margin uses the meshfix_maximum_resolution setting
+            if (first_path.points.size() > 1 && error_area + new_error_area < merged_part_length * maximum_resolution)
             {
                 new_path_length -= vSize(first_path.points[first_path.points.size() - 2] - first_path.points[first_path.points.size() - 1]);
                 new_path_length += vSize(first_path.points[first_path.points.size() - 2] - average_second_path);

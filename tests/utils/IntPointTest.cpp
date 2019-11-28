@@ -1,14 +1,26 @@
 //Copyright (c) 2017 Tim Kuipers
-//Copyright (c) 2019 Ultimaker B.V.
+//Copyright (c) 2018 Ultimaker B.V.
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
-#include <gtest/gtest.h>
+#include "IntPointTest.h"
+
 #include <../src/utils/IntPoint.h>
 
 namespace cura
 {
+    CPPUNIT_TEST_SUITE_REGISTRATION(IntPointTest);
 
-TEST(IntPointTest, TestRotationMatrix)
+void IntPointTest::setUp()
+{
+    //Do nothing.
+}
+
+void IntPointTest::tearDown()
+{
+    //Do nothing.
+}
+
+void IntPointTest::testRotationMatrix()
 {
     PointMatrix rot2d(90);
     Point3Matrix rot_homogeneous(rot2d);
@@ -21,7 +33,7 @@ TEST(IntPointTest, TestRotationMatrix)
     Point3Matrix all_in_one = Point3Matrix::translate(a).compose(rot_homogeneous).compose(Point3Matrix::translate(-a));
     Point rotated_in_place_2 = all_in_one.apply(b);
 
-    ASSERT_EQ(rotated_in_place, rotated_in_place_2) << "Matrix composition with translate and rotate failed.";
+    CPPUNIT_ASSERT_MESSAGE(std::string("Matrix composition with translate and rotate failed"), rotated_in_place == rotated_in_place_2);
 }
 
 }

@@ -5,10 +5,9 @@
 #ifndef CONICAL_OVERHANG_H
 #define CONICAL_OVERHANG_H
 
-namespace cura {
+#include "slicer.h"
 
-class Mesh;
-class Slicer;
+namespace cura {
 
 /*!
  * A class for changing the geometry of a model such that it is printable without support -

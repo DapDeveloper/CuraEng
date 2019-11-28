@@ -2,22 +2,18 @@
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include <algorithm> //For std::sort.
-#include <functional>
 #include <unordered_set>
 
 #include "infill.h"
-#include "sliceDataStorage.h"
-#include "infill/ImageBasedDensityProvider.h"
-#include "infill/GyroidInfill.h"
-#include "infill/NoZigZagConnectorProcessor.h"
-#include "infill/SierpinskiFill.h"
-#include "infill/SierpinskiFillProvider.h"
-#include "infill/SubDivCube.h"
-#include "infill/UniformDensityProvider.h"
-#include "utils/logoutput.h"
-#include "utils/PolygonConnector.h"
+#include "functional"
 #include "utils/polygonUtils.h"
+#include "utils/logoutput.h"
 #include "utils/UnionFind.h"
+#include "infill/SierpinskiFill.h"
+#include "infill/ImageBasedDensityProvider.h"
+#include "utils/PolygonConnector.h"
+#include "infill/UniformDensityProvider.h"
+#include "infill/GyroidInfill.h"
 
 /*!
  * Function which returns the scanline_idx for a given x coordinate
@@ -252,7 +248,7 @@ void Infill::multiplyInfill(Polygons& result_polygons, Polygons& result_lines)
 
 void Infill::generateGyroidInfill(Polygons& result_lines)
 {
-    GyroidInfill::generateTotalGyroidInfill(result_lines, zig_zaggify, outline_offset + infill_overlap, infill_line_width, line_distance, in_outline, z);
+    GyroidInfill::generateTotalGyroidInfill(result_lines, zig_zaggify, outline_offset, infill_line_width, line_distance, in_outline, z);
 }
 
 void Infill::generateConcentricInfill(Polygons& result, int inset_value)
@@ -352,7 +348,6 @@ void Infill::generateCubicSubDivInfill(Polygons& result, const SliceMeshStorage&
 
 void Infill::generateCrossInfill(const SierpinskiFillProvider& cross_fill_provider, Polygons& result_polygons, Polygons& result_lines)
 {
-    outline_offset += infill_overlap;
     if (zig_zaggify)
     {
         outline_offset += -infill_line_width / 2;
@@ -393,7 +388,7 @@ void Infill::generateCrossInfill(const SierpinskiFillProvider& cross_fill_provid
 
 void Infill::addLineSegmentsInfill(Polygons& result, Polygons& input)
 {
-    ClipperLib::PolyTree interior_segments_tree = in_outline.offset(infill_overlap).lineSegmentIntersection(input);
+    ClipperLib::PolyTree interior_segments_tree = in_outline.lineSegmentIntersection(input);
     ClipperLib::Paths interior_segments;
     ClipperLib::OpenPathsFromPolyTree(interior_segments_tree, interior_segments);
     for (size_t idx = 0; idx < interior_segments.size(); idx++)

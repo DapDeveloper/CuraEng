@@ -7,11 +7,8 @@
 #include <limits>
 
 #include "AdaptiveLayerHeights.h"
-#include "EnumSettings.h"
-#include "types/AngleRadians.h"
 #include "../Application.h"
-#include "../Slice.h"
-#include "../utils/floatpoint.h"
+#include "../settings/types/AngleRadians.h"
 
 namespace cura
 {

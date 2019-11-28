@@ -1,23 +1,17 @@
-//Copyright (c) 2019 Ultimaker B.V.
+//Copyright (c) 2018 Ultimaker B.V.
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include <cstring>
 
 #include "Application.h" //To communicate layer view data.
-#include "ExtruderTrain.h"
 #include "LayerPlan.h"
 #include "MergeInfillLines.h"
+#include "pathOrderOptimizer.h"
 #include "raft.h" // getTotalExtraLayers
-#include "Slice.h"
 #include "sliceDataStorage.h"
-#include "wallOverlap.h"
 #include "communication/Communication.h"
-#include "pathPlanning/Comb.h"
-#include "pathPlanning/CombPaths.h"
 #include "settings/types/Ratio.h"
-#include "utils/logoutput.h"
 #include "utils/polygonUtils.h"
-#include "WipeScriptConfig.h"
 
 namespace cura {
 
@@ -209,34 +203,25 @@ Polygons LayerPlan::computeCombBoundaryInside(const size_t max_inset)
                         outer = outer.offset(outer_to_outline_dist/2+10).unionPolygons(outline_where_outer_is_missing.offset(outer_to_outline_dist/2+10)).offset(-(outer_to_outline_dist/2+10));
                     }
 
+                    Polygons inner; // inner boundary of wall combing region
+
+                    // the inside of the wall combing region is just inside the wall's inner edge so it can meet up with the infill (if any)
+
                     if (num_insets == 0)
                     {
-                        comb_boundary.add(outer);
+                        inner = part.outline.offset(-10);
                     }
-                    else
+                    else if (num_insets == 1)
                     {
-                        Polygons inner; // inner boundary of wall combing region
-
-                        // the inside of the wall combing region is just inside the wall's inner edge so it can meet up with the infill (if any)
-
-                        if (num_insets == 1)
-                        {
-                            inner = part.insets[0].offset(-10-line_width_0/2);
-                        }
-                        else
-                        {
-                            inner = part.insets[num_insets - 1].offset(-10 - mesh.settings.get<coord_t>("wall_line_width_x") / 2);
-                        }
-
-                        Polygons infill(part.infill_area);
-                        if (part.perimeter_gaps.size() > 0)
-                        {
-                            infill = infill.unionPolygons(part.perimeter_gaps.offset(10)); // ensure polygons overlap slightly
-                        }
-
-                        // combine the wall combing region (outer - inner) with the infill (if any)
-                        comb_boundary.add(infill.unionPolygons(outer.difference(inner)));
+                        inner = part.insets[0].offset(-10-line_width_0/2);
                     }
+                    else if(num_insets > 1)
+                    {
+                        inner = part.insets[num_insets - 1].offset(-10 - mesh.settings.get<coord_t>("wall_line_width_x") / 2);
+                    }
+
+                    // combine the wall combing region (outer - inner) with the infill (if any)
+                    comb_boundary.add(part.infill_area.unionPolygons(outer.difference(inner)));
                 }
             }
             else if (combing_mode == CombingMode::INFILL)
@@ -1358,25 +1343,12 @@ void LayerPlan::writeGCode(GCodeExport& gcode)
     {
         ExtruderPlan& extruder_plan = extruder_plans[extruder_plan_idx];
         const RetractionConfig& retraction_config = storage.retraction_config_per_extruder[extruder_plan.extruder_nr];
-        coord_t z_hop_height = retraction_config.zHop;
 
         if (extruder_nr != extruder_plan.extruder_nr)
         {
             int prev_extruder = extruder_nr;
             extruder_nr = extruder_plan.extruder_nr;
-
-            gcode.ResetLastEValueAfterWipe(prev_extruder);
-
-            const ExtruderTrain& prev_extruder_train = Application::getInstance().current_slice->scene.extruders[prev_extruder];
-            if (prev_extruder_train.settings.get<bool>("retraction_hop_after_extruder_switch"))
-            {
-                z_hop_height = storage.extruder_switch_retraction_config_per_extruder[prev_extruder].zHop;
-                gcode.switchExtruder(extruder_nr, storage.extruder_switch_retraction_config_per_extruder[prev_extruder], z_hop_height);
-            }
-            else
-            {
-                gcode.switchExtruder(extruder_nr, storage.extruder_switch_retraction_config_per_extruder[prev_extruder]);
-            }
+            gcode.switchExtruder(extruder_nr, storage.extruder_switch_retraction_config_per_extruder[prev_extruder]);
 
             const ExtruderTrain& extruder = Application::getInstance().current_slice->scene.extruders[extruder_nr];
             if (extruder.settings.get<Velocity>("max_feedrate_z_override") > 0)
@@ -1401,21 +1373,12 @@ void LayerPlan::writeGCode(GCodeExport& gcode)
                 gcode.writeTemperatureCommand(prev_extruder, prev_extruder_temp, wait);
             }
         }
-        else if (extruder_plan_idx == 0)
+        else if (extruder_plan_idx == 0 && layer_nr != 0 && Application::getInstance().current_slice->scene.extruders[extruder_nr].settings.get<bool>("retract_at_layer_change"))
         {
-            const WipeScriptConfig& wipe_config = storage.wipe_config_per_extruder[extruder_plan.extruder_nr];
-            if (wipe_config.clean_between_layers && gcode.getExtrudedVolumeAfterLastWipe(extruder_nr) > wipe_config.max_extrusion_mm3)
+            // only do the retract if the paths are not spiralized
+            if (!mesh_group_settings.get<bool>("magic_spiralize"))
             {
-                gcode.insertWipeScript(wipe_config);
-                gcode.ResetLastEValueAfterWipe(extruder_nr);
-            }
-            else if (layer_nr != 0 && Application::getInstance().current_slice->scene.extruders[extruder_nr].settings.get<bool>("retract_at_layer_change"))
-            {
-                // only do the retract if the paths are not spiralized
-                if (!mesh_group_settings.get<bool>("magic_spiralize"))
-                {
-                    gcode.writeRetraction(retraction_config);
-                }
+                gcode.writeRetraction(retraction_config);
             }
         }
         gcode.writeFanCommand(extruder_plan.getFanSpeed());
@@ -1473,8 +1436,7 @@ void LayerPlan::writeGCode(GCodeExport& gcode)
                 gcode.writeRetraction(retraction_config);
                 if (path.perform_z_hop)
                 {
-                    gcode.writeZhopStart(z_hop_height);
-                    z_hop_height = retraction_config.zHop; // back to normal z hop
+                    gcode.writeZhopStart(retraction_config.zHop);
                 }
                 else
                 {
@@ -1671,7 +1633,7 @@ bool LayerPlan::writePathWithCoasting(GCodeExport& gcode, const size_t extruder_
     coord_t coasting_min_dist_considered = 100; // hardcoded setting for when to not perform coasting
 
     
-    double extrude_speed = path.config->getSpeed() * extruder_plan.getExtrudeSpeedFactor() * path.speed_factor; // travel speed
+    double extrude_speed = path.config->getSpeed() * extruder_plan.getExtrudeSpeedFactor(); // travel speed 
     
     const coord_t coasting_dist = MM2INT(MM2_2INT(coasting_volume) / layer_thickness) / path.config->getLineWidth(); // closing brackets of MM2INT at weird places for precision issues
     const double coasting_min_volume = extruder.settings.get<double>("coasting_min_volume");

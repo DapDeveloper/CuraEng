@@ -4,6 +4,7 @@
 #ifndef RETRACTION_CONFIG_H
 #define RETRACTION_CONFIG_H
 
+#include "utils/IntPoint.h" //For coord_t.
 #include "settings/types/Velocity.h"
 
 namespace cura 

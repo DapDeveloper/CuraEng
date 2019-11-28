@@ -1,10 +1,4 @@
-//Copyright (c) 2017 Tim Kuipers
-//Copyright (c) 2018 Ultimaker B.V.
-//CuraEngine is released under the terms of the AGPLv3 or higher.
-
-#include "floatpoint.h"
-#include "logoutput.h"
-#include "polygon.h"
+/** Copyright (C) 2017 Tim Kuipers - Released under terms of the AGPLv3 License */
 #include "SVG.h"
 
 namespace cura {
@@ -92,9 +86,9 @@ void SVG::writeComment(std::string comment)
 
 void SVG::writeAreas(const Polygons& polygons, Color color, Color outline_color, float stroke_width) 
 {
-    for (PolygonsPart& parts : polygons.splitIntoParts())
+    for(PolygonsPart& parts : polygons.splitIntoParts())
     {
-        for (unsigned int j = 0; j < parts.size(); j++)
+        for(unsigned int j=0;j<parts.size();j++)
         {
             fprintf(out, "<polygon points=\"");
             for (Point& p : parts[j])

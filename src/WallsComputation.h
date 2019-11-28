@@ -4,13 +4,10 @@
 #ifndef WALLS_COMPUTATION_H
 #define WALLS_COMPUTATION_H
 
-#include "settings/types/LayerIndex.h"
+#include "sliceDataStorage.h"
 
 namespace cura 
 {
-
-class SliceLayer;
-class SliceLayerPart;
 
 /*!
  * Function container for computing the outer walls / insets / perimeters polygons of a layer

@@ -2,14 +2,9 @@
 //CuraEngine is released under the terms of the AGPLv3 or higher.
 
 #include "Application.h" //To get settings.
-#include "ExtruderTrain.h"
 #include "Mold.h"
-#include "Scene.h"
-#include "Slice.h"
-#include "sliceDataStorage.h"
-#include "slicer.h"
-#include "settings/types/Ratio.h"
 #include "utils/IntPoint.h"
+#include "sliceDataStorage.h"
 
 namespace cura
 {

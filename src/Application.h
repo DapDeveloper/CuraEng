@@ -4,13 +4,11 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "utils/NoCopy.h"
-#include <cstddef> //For size_t.
+#include "Slice.h" //To store the current slice.
 
 namespace cura
 {
 class Communication;
-class Slice;
 
 /*!
  * A singleton class that serves as the starting point for all slicing.
